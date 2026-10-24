@@ -66,7 +66,7 @@ class ProdutoAdmin(admin.ModelAdmin):
     margem_display.short_description = 'Margem'
 
     def preco_venda_display(self, obj):
-        return format_html('<strong>R$ {:.2f}</strong>', obj.preco_venda)
+        return format_html('<strong>R$ {}</strong>', f'{obj.preco_venda:.2f}')
     preco_venda_display.short_description = 'Preço Venda'
 
     def estoque_display(self, obj):
@@ -170,9 +170,9 @@ class CaixaAdmin(admin.ModelAdmin):
         if abs(dif) < 0.01:
             return mark_safe('<span style="color: #16a34a; font-weight: bold;">R$ 0,00 (Exato)</span>')
         elif dif > 0:
-            return format_html('<span style="color: #0284c7; font-weight: bold;">+ R$ {:.2f} (Sobra)</span>', dif)
+            return format_html('<span style="color: #0284c7; font-weight: bold;">+ R$ {} (Sobra)</span>', f'{dif:.2f}')
         else:
-            return format_html('<span style="color: #dc2626; font-weight: bold;">- R$ {:.2f} (Quebra)</span>', abs(dif))
+            return format_html('<span style="color: #dc2626; font-weight: bold;">- R$ {} (Quebra)</span>', f'{abs(dif):.2f}')
     diferenca_display.short_description = 'Diferença'
 
 
@@ -189,7 +189,7 @@ class VendaAdmin(admin.ModelAdmin):
     meio_pagamento_display.short_description = 'Pagamento'
 
     def total_display(self, obj):
-        return format_html('<strong>R$ {:.2f}</strong>', obj.total)
+        return format_html('<strong>R$ {}</strong>', f'{obj.total:.2f}')
     total_display.short_description = 'Total'
 
 

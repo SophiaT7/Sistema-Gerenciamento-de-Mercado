@@ -2,8 +2,44 @@ from decimal import Decimal
 from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
+from django.urls import reverse
 from mercado.models import Usuario, Produto, Lote, Caixa, Venda, Alerta
 from mercado.services import ControladorProduto, ControladorVenda, ControladorCaixa, ControladorAlertas
+
+
+class AdminProdutoTest(TestCase):
+    def test_cadastrar_produto_no_admin_carrega_lista(self):
+        admin = Usuario.objects.create_superuser(
+            username='admin_teste',
+            email='admin@example.com',
+            password='123'
+        )
+        self.client.force_login(admin)
+
+        response = self.client.post(
+            reverse('admin:mercado_produto_add'),
+            {
+                'codigo': '7890002',
+                'nome': 'Produto criado no admin',
+                'categoria': 'MERCEARIA',
+                'unidade': 'UN',
+                'estoque_minimo': '5.00',
+                'preco_custo': '10.00',
+                'margem_lucro': '30.00',
+                'preco_venda': '0.00',
+                'ativo': 'on',
+                '_save': 'Salvar',
+                'lotes-TOTAL_FORMS': '0',
+                'lotes-INITIAL_FORMS': '0',
+                'lotes-MIN_NUM_FORMS': '0',
+                'lotes-MAX_NUM_FORMS': '1000',
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Produto.objects.filter(codigo='7890002').exists())
+        self.assertContains(response, 'Produto criado no admin')
 
 
 class MercadoBCEEngenhariaSoftwareTest(TestCase):
