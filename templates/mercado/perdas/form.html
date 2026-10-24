@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Perda{% endblock %}
+{% block page_title %}Registro de Perda &amp; Avaria no Estoque{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-trash-alt" style="color: var(--danger);"></i> Registrar Nova Perda / Baixa</h3>
+      <a href="{% url 'perda_lista' %}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-list"></i> Histórico de Perdas
+      </a>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" for="produto_id">Produto com Perda / Avaria *</label>
+          <select id="produto_id" name="produto_id" class="form-select" required autofocus>
+            <option value="">Selecione o produto...</option>
+            {% for p in produtos %}
+              <option value="{{ p.id }}">{{ p.codigo }} - {{ p.nome }} (Estoque Atual: {{ p.estoque_atual }} {{ p.unidade }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="quantidade">Quantidade a Baixar *</label>
+            <input type="number" step="0.01" id="quantidade" name="quantidade" class="form-control" placeholder="Ex: 2" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="motivo">Motivo da Perda *</label>
+            <select id="motivo" name="motivo" class="form-select" required>
+              {% for cod, rotulo in motivos %}
+                <option value="{{ cod }}">{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="numero_lote">Número do Lote Específico (Opcional)</label>
+          <input type="text" id="numero_lote" name="numero_lote" class="form-control" placeholder="Se souber o lote exato, informe aqui...">
+          <small style="color: var(--text-muted); display: block; margin-top: 4px;">
+            Se não informado, o sistema dará baixa automática no lote com data de validade mais próxima.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="justificativa">Justificativa / Detalhes (Opcional)</label>
+          <textarea id="justificativa" name="justificativa" rows="3" class="form-control" placeholder="Ex: Pacote rasgado durante a reposição na gôndola 3..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px;">
+          <a href="{% url 'perda_lista' %}" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-check"></i> Confirmar Baixa por Perda
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

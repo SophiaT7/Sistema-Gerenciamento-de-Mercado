@@ -1,0 +1,574 @@
+{% extends 'base.html' %}
+
+{% block title %}Ponto de Venda (PDV){% endblock %}
+{% block page_title %}Ponto de Venda - Caixa #{{ caixa.id }}{% endblock %}
+
+{% block content %}
+<style>
+  .pdv-container {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 24px;
+    height: calc(100vh - 140px);
+    min-height: 580px;
+  }
+  .pdv-panel {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .pdv-header {
+    padding: 16px 20px;
+    background: #0f172a;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cart-table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .cart-total-bar {
+    padding: 20px;
+    background: #f8fafc;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .total-display {
+    text-align: right;
+  }
+  .total-display span {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .total-display h2 {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+  }
+  .quick-search-box {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    background: #f8fafc;
+  }
+  .product-grid-quick {
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .quick-item-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .quick-item-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+  .quick-item-card strong {
+    font-size: 12px;
+    color: var(--text-main);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .quick-item-card .price {
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 800;
+    margin-top: 6px;
+  }
+  /* Modal Overlay */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-box {
+    background: #fff;
+    width: 100%;
+    max-width: 500px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 18px 24px;
+    background: #0f172a;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-body {
+    padding: 24px;
+  }
+  .payment-methods-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .payment-btn {
+    padding: 16px 12px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-main);
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .payment-btn i {
+    font-size: 24px;
+  }
+  .payment-btn.selected {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+</style>
+
+<div class="pdv-container">
+  <!-- Painel Esquerdo: Carrinho da Venda -->
+  <div class="pdv-panel">
+    <div class="pdv-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-shopping-cart" style="font-size: 18px; color: #818cf8;"></i>
+        <span style="font-weight: 700; font-size: 15px;">Itens da Venda</span>
+      </div>
+      <div style="font-size: 13px; color: #cbd5e1;">
+        Operador: <strong>{{ user.first_name|default:user.username }}</strong>
+      </div>
+    </div>
+
+    <div class="cart-table-wrap">
+      <table class="custom-table" id="cartTable">
+        <thead>
+          <tr>
+            <th style="width: 40px;">#</th>
+            <th>Produto</th>
+            <th style="width: 100px; text-align: center;">Qtd</th>
+            <th style="width: 110px; text-align: right;">Unitário</th>
+            <th style="width: 120px; text-align: right;">Subtotal</th>
+            <th style="width: 50px;"></th>
+          </tr>
+        </thead>
+        <tbody id="cartItems">
+          <!-- Inserido dinamicamente via JS -->
+        </tbody>
+      </table>
+      <div id="cartEmptyState" style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <i class="fas fa-barcode" style="font-size: 48px; color: #cbd5e1; margin-bottom: 12px;"></i>
+        <h4 style="font-size: 16px; font-weight: 600;">Carrinho Vazio</h4>
+        <p style="font-size: 13px;">Passe o leitor de código de barras ou use a busca ao lado para adicionar itens.</p>
+      </div>
+    </div>
+
+    <div class="cart-total-bar">
+      <div>
+        <button type="button" class="btn btn-secondary" onclick="cancelarVenda()" id="btnCancelar">
+          <i class="fas fa-trash"></i> Cancelar Venda
+        </button>
+      </div>
+      <div class="total-display">
+        <span>Total a Pagar</span>
+        <h2 id="grandTotalDisplay">R$ 0,00</h2>
+      </div>
+      <div>
+        <button type="button" class="btn btn-success" style="padding: 14px 28px; font-size: 16px; font-weight: 700;" onclick="abrirModalPagamento()" id="btnFinalizar" disabled>
+          <i class="fas fa-check-circle"></i> Finalizar (F4)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel Direito: Entrada de Código e Catálogo Rápido -->
+  <div class="pdv-panel">
+    <div class="quick-search-box">
+      <label class="form-label" style="font-size: 13px; font-weight: 700;">
+        <i class="fas fa-barcode"></i> Código de Barras / Nome do Produto
+      </label>
+      <div style="display: flex; gap: 8px;">
+        <input type="text" id="barcodeInput" class="form-control" placeholder="Bipe o código ou digite o nome..." autofocus style="font-size: 16px; font-weight: 600;">
+        <input type="number" id="qtyInput" value="1" min="1" step="1" class="form-control" style="width: 75px; text-align: center; font-weight: bold;" title="Quantidade">
+        <button type="button" class="btn btn-primary" onclick="adicionarPeloInput()">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+      <div id="searchFeedback" style="font-size: 12px; margin-top: 6px; display: none;"></div>
+    </div>
+
+    <div style="padding: 12px 16px 4px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);">
+      <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">
+        Catálogo Rápido de Produtos
+      </span>
+      <span style="font-size: 11px; color: var(--text-light);">Clique para adicionar</span>
+    </div>
+
+    <div class="product-grid-quick">
+      {% for prod in produtos %}
+        <div class="quick-item-card" onclick="adicionarItemManual({{ prod.id }}, '{{ prod.codigo|escapejs }}', '{{ prod.nome|escapejs }}', {{ prod.preco_venda|stringformat:'.2f' }}, '{{ prod.unidade|escapejs }}')">
+          <div>
+            <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-muted);">{{ prod.codigo }}</span>
+            <strong>{{ prod.nome }}</strong>
+          </div>
+          <div class="price">R$ {{ prod.preco_venda|floatformat:2 }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Pagamento -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 style="font-size: 16px; font-weight: 700;"><i class="fas fa-credit-card"></i> Escolha a Forma de Pagamento</h3>
+      <button type="button" onclick="fecharModalPagamento()" style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">VALOR TOTAL DA VENDA</span>
+        <h2 id="modalTotalVenda" style="font-size: 32px; font-weight: 800; color: var(--primary); font-family: var(--font-mono); margin-top: 4px;">R$ 0,00</h2>
+      </div>
+
+      <div class="payment-methods-grid">
+        <button type="button" class="payment-btn selected" id="btnPayDinheiro" onclick="selecionarMeio('DINHEIRO')">
+          <i class="fas fa-money-bill-wave" style="color: #10b981;"></i>
+          <span>Dinheiro</span>
+        </button>
+        <button type="button" class="payment-btn" id="btnPayPix" onclick="selecionarMeio('PIX')">
+          <i class="fas fa-qrcode" style="color: #06b6d4;"></i>
+          <span>PIX</span>
+        </button>
+        <button type="button" class="payment-btn" id="btnPayDebito" onclick="selecionarMeio('CARTAO_DEBITO')">
+          <i class="fas fa-credit-card" style="color: #6366f1;"></i>
+          <span>Débito</span>
+        </button>
+        <button type="button" class="payment-btn" id="btnPayCredito" onclick="selecionarMeio('CARTAO_CREDITO')">
+          <i class="fas fa-credit-card" style="color: #8b5cf6;"></i>
+          <span>Crédito</span>
+        </button>
+      </div>
+
+      <!-- Campo de Troco para Dinheiro -->
+      <div id="trocoSection" style="background: #f8fafc; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 20px;">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label class="form-label" for="valorRecebido">Valor Recebido do Cliente (R$)</label>
+          <input type="number" step="0.01" id="valorRecebido" class="form-control" style="font-size: 18px; font-weight: bold;" oninput="calcularTroco()">
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 15px;">
+          <strong style="color: var(--text-muted);">Troco a devolver:</strong>
+          <strong id="displayTroco" style="font-size: 18px; color: var(--success); font-family: var(--font-mono);">R$ 0,00</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <button type="button" class="btn btn-secondary" onclick="fecharModalPagamento()" style="flex: 1;">Voltar</button>
+        <button type="button" class="btn btn-success" onclick="confirmarVendaServidor()" style="flex: 2; padding: 12px; font-size: 15px;" id="btnConfirmarVenda">
+          <i class="fas fa-check-circle"></i> Confirmar Venda
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Recibo / Sucesso -->
+<div class="modal-overlay" id="receiptModal">
+  <div class="modal-box" style="max-width: 420px;">
+    <div class="modal-body" style="text-align: center; padding: 32px 24px;">
+      <div style="width: 60px; height: 60px; background: #ecfdf5; color: #10b981; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 16px;">
+        <i class="fas fa-check"></i>
+      </div>
+      <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">Venda Concluída!</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" id="receiptInfo"></p>
+
+      <div style="background: #f8fafc; border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px; text-align: left; font-family: var(--font-mono); font-size: 12px;" id="receiptDetails">
+        <!-- Detalhes do comprovante -->
+      </div>
+
+      <button type="button" class="btn btn-primary" onclick="novaVenda()" style="width: 100%; padding: 12px; font-size: 15px;">
+        <i class="fas fa-plus"></i> Próxima Venda (Enter)
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let carrinho = [];
+  let meioPagamentoSelecionado = 'DINHEIRO';
+
+  const barcodeInput = document.getElementById('barcodeInput');
+  const qtyInput = document.getElementById('qtyInput');
+  const searchFeedback = document.getElementById('searchFeedback');
+
+  // Atalhos de teclado
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F4') {
+      e.preventDefault();
+      abrirModalPagamento();
+    }
+    if (e.key === 'Escape') {
+      fecharModalPagamento();
+    }
+  });
+
+  barcodeInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      adicionarPeloInput();
+    }
+  });
+
+  function adicionarPeloInput() {
+    const termo = barcodeInput.value.trim();
+    const qtd = parseFloat(qtyInput.value) || 1;
+    if (!termo) return;
+
+    fetch(`{% url 'pdv_buscar_api' %}?termo=${encodeURIComponent(termo)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.sucesso) {
+          const p = data.produto;
+          adicionarItemManual(p.id, p.codigo, p.nome, p.preco_venda, p.unidade, qtd);
+          barcodeInput.value = '';
+          qtyInput.value = 1;
+          searchFeedback.style.display = 'none';
+        } else {
+          searchFeedback.style.display = 'block';
+          searchFeedback.style.color = '#ef4444';
+          searchFeedback.innerText = 'Produto não encontrado: ' + termo;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }
+
+  function adicionarItemManual(id, codigo, nome, preco, unidade, qtdParam = 1) {
+    const qtd = qtdParam;
+    const existente = carrinho.find(i => i.produto_id === id);
+    if (existente) {
+      existente.quantidade += qtd;
+    } else {
+      carrinho.push({
+        produto_id: id,
+        codigo: codigo,
+        nome: nome,
+        preco_unitario: parseFloat(preco),
+        unidade: unidade,
+        quantidade: qtd
+      });
+    }
+    renderCarrinho();
+    barcodeInput.focus();
+  }
+
+  function alterarQtdItem(index, novaQtd) {
+    const q = parseFloat(novaQtd);
+    if (q <= 0) {
+      removerItem(index);
+    } else {
+      carrinho[index].quantidade = q;
+      renderCarrinho();
+    }
+  }
+
+  function removerItem(index) {
+    carrinho.splice(index, 1);
+    renderCarrinho();
+  }
+
+  function cancelarVenda() {
+    if (carrinho.length === 0) return;
+    if (confirm('Deseja realmente cancelar os itens desta venda?')) {
+      carrinho = [];
+      renderCarrinho();
+    }
+  }
+
+  function calcularTotal() {
+    return carrinho.reduce((acc, it) => acc + (it.quantidade * it.preco_unitario), 0);
+  }
+
+  function renderCarrinho() {
+    const tbody = document.getElementById('cartItems');
+    const emptyState = document.getElementById('cartEmptyState');
+    const grandTotalDisplay = document.getElementById('grandTotalDisplay');
+    const btnFinalizar = document.getElementById('btnFinalizar');
+
+    tbody.innerHTML = '';
+
+    if (carrinho.length === 0) {
+      emptyState.style.display = 'block';
+      btnFinalizar.disabled = true;
+      grandTotalDisplay.innerText = 'R$ 0,00';
+      return;
+    }
+
+    emptyState.style.display = 'none';
+    btnFinalizar.disabled = false;
+
+    carrinho.forEach((it, idx) => {
+      const subtotal = it.quantidade * it.preco_unitario;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span style="color: var(--text-muted); font-size: 12px;">${idx + 1}</span></td>
+        <td>
+          <strong>${it.nome}</strong>
+          <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">${it.codigo}</div>
+        </td>
+        <td style="text-align: center;">
+          <input type="number" min="0.1" step="0.1" value="${it.quantidade}" class="form-control" style="width: 70px; display: inline-block; padding: 4px; text-align: center; font-size: 13px;" onchange="alterarQtdItem(${idx}, this.value)">
+        </td>
+        <td style="text-align: right; font-family: var(--font-mono);">R$ ${it.preco_unitario.toFixed(2)}</td>
+        <td style="text-align: right; font-weight: bold; color: var(--primary); font-family: var(--font-mono);">R$ ${subtotal.toFixed(2)}</td>
+        <td style="text-align: center;">
+          <button type="button" onclick="removerItem(${idx})" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;" title="Remover item">
+            <i class="fas fa-times"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const total = calcularTotal();
+    grandTotalDisplay.innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
+  }
+
+  function abrirModalPagamento() {
+    if (carrinho.length === 0) return;
+    const total = calcularTotal();
+    document.getElementById('modalTotalVenda').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
+    document.getElementById('valorRecebido').value = total.toFixed(2);
+    calcularTroco();
+    document.getElementById('paymentModal').style.display = 'flex';
+  }
+
+  function fecharModalPagamento() {
+    document.getElementById('paymentModal').style.display = 'none';
+  }
+
+  function selecionarMeio(meio) {
+    meioPagamentoSelecionado = meio;
+    document.querySelectorAll('.payment-btn').forEach(btn => btn.classList.remove('selected'));
+    
+    if (meio === 'DINHEIRO') document.getElementById('btnPayDinheiro').classList.add('selected');
+    if (meio === 'PIX') document.getElementById('btnPayPix').classList.add('selected');
+    if (meio === 'CARTAO_DEBITO') document.getElementById('btnPayDebito').classList.add('selected');
+    if (meio === 'CARTAO_CREDITO') document.getElementById('btnPayCredito').classList.add('selected');
+
+    document.getElementById('trocoSection').style.display = (meio === 'DINHEIRO') ? 'block' : 'none';
+  }
+
+  function calcularTroco() {
+    const total = calcularTotal();
+    const recebido = parseFloat(document.getElementById('valorRecebido').value) || 0;
+    const troco = Math.max(0, recebido - total);
+    document.getElementById('displayTroco').innerText = 'R$ ' + troco.toFixed(2).replace('.', ',');
+  }
+
+  function confirmarVendaServidor() {
+    const btn = document.getElementById('btnConfirmarVenda');
+    btn.disabled = true;
+    btn.innerText = 'Processando...';
+
+    const payload = {
+      meio_pagamento: meioPagamentoSelecionado,
+      itens: carrinho.map(i => ({
+        produto_id: i.produto_id,
+        quantidade: i.quantidade,
+        preco_unitario: i.preco_unitario
+      }))
+    };
+
+    fetch("{% url 'pdv_finalizar_api' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}"
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerText = 'Confirmar Venda';
+      if (data.sucesso) {
+        fecharModalPagamento();
+        exibirComprovante(data);
+      } else {
+        alert("Erro ao finalizar venda: " + data.mensagem);
+      }
+    })
+    .catch(err => {
+      btn.disabled = false;
+      btn.innerText = 'Confirmar Venda';
+      alert("Falha de comunicação com o servidor.");
+    });
+  }
+
+  function exibirComprovante(vendaData) {
+    document.getElementById('receiptInfo').innerText = `Venda #${vendaData.venda_id} registrada no Caixa #{{ caixa.id }}`;
+    
+    let html = `<div style="text-align: center; margin-bottom: 8px;"><strong>MERCADO CENTRAL LTDA</strong><br>Comprovante de Venda não Fiscal</div>`;
+    html += `<div style="margin-bottom: 6px;">Data: ${vendaData.data_venda}</div>`;
+    html += `<div style="margin-bottom: 6px;">Pagamento: <strong>${vendaData.meio_pagamento}</strong></div>`;
+    html += `<hr style="margin: 8px 0; border: none; border-top: 1px dashed #cbd5e1;">`;
+    
+    carrinho.forEach(it => {
+      html += `<div style="display: flex; justify-content: space-between;"><span>${it.quantidade}x ${it.nome}</span><span>R$ ${(it.quantidade * it.preco_unitario).toFixed(2)}</span></div>`;
+    });
+
+    html += `<hr style="margin: 8px 0; border: none; border-top: 1px dashed #cbd5e1;">`;
+    html += `<div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold;"><span>TOTAL:</span><span>R$ ${vendaData.total.toFixed(2)}</span></div>`;
+
+    document.getElementById('receiptDetails').innerHTML = html;
+    document.getElementById('receiptModal').style.display = 'flex';
+  }
+
+  function novaVenda() {
+    document.getElementById('receiptModal').style.display = 'none';
+    carrinho = [];
+    renderCarrinho();
+    barcodeInput.focus();
+  }
+</script>
+{% endblock %}

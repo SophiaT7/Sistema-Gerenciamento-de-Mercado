@@ -1,0 +1,17 @@
+# Python / Django
+venv/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+*.sqlite3-journal
+
+# Staticfiles gerados em deploy
+staticfiles/
+
+# IDEs
+.vscode/
+.idea/
+*.asta.bak

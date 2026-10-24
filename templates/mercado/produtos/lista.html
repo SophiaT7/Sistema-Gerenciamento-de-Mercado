@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Produtos e Estoque{% endblock %}
+{% block page_title %}Catálogo de Produtos &amp; Controle de Estoque{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-body" style="padding: 16px 24px;">
+    <form method="get" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+      <div style="flex: 2; min-width: 200px;">
+        <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Buscar por código de barras ou nome do produto...">
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <select name="categoria" class="form-select">
+          <option value="">Todas as Categorias</option>
+          {% for cod, rotulo in categorias %}
+            <option value="{{ cod }}" {% if categoria_selecionada == cod %}selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <select name="status" class="form-select">
+          <option value="">Todos os Status</option>
+          <option value="baixo" {% if status_selecionado == 'baixo' %}selected{% endif %}>Estoque Baixo</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-secondary">
+        <i class="fas fa-search"></i> Filtrar
+      </button>
+      {% if user.papel != 'OPERADOR' %}
+        <a href="{% url 'produto_criar' %}" class="btn btn-primary" style="margin-left: auto;">
+          <i class="fas fa-plus"></i> Novo Produto
+        </a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-boxes" style="color: var(--primary);"></i> Produtos Cadastrados ({{ produtos|length }})</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>Categoria</th>
+          <th>Custo (R$)</th>
+          <th>Margem</th>
+          <th>Preço Venda (R$)</th>
+          <th>Estoque Atual</th>
+          <th>Situação</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in produtos %}
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-weight: bold;">{{ item.obj.codigo }}</code></td>
+            <td>
+              <strong>{{ item.obj.nome }}</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Mínimo: {{ item.obj.estoque_minimo }} {{ item.obj.unidade }}</div>
+            </td>
+            <td><span class="badge badge-neutral">{{ item.obj.get_categoria_display }}</span></td>
+            <td>R$ {{ item.obj.preco_custo|floatformat:2 }}</td>
+            <td>{{ item.obj.margem_lucro|floatformat:1 }}%</td>
+            <td><strong style="color: var(--primary); font-size: 15px;">R$ {{ item.obj.preco_venda|floatformat:2 }}</strong></td>
+            <td>
+              <strong>{{ item.estoque }}</strong> {{ item.obj.unidade }}
+            </td>
+            <td>
+              {% if item.alerta_baixo %}
+                <span class="badge badge-danger">
+                  <i class="fas fa-exclamation-triangle"></i> Estoque Baixo
+                </span>
+              {% else %}
+                <span class="badge badge-success">OK</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if user.papel != 'OPERADOR' %}
+                <a href="{% url 'produto_alterar_preco' item.obj.id %}" class="btn btn-sm btn-secondary" title="Alterar Preço de Venda">
+                  <i class="fas fa-tag"></i> Alterar Preço
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 40px;">
+              Nenhum produto encontrado com os filtros selecionados.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

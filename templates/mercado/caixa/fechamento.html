@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Fechamento de Caixa{% endblock %}
+{% block page_title %}Conferência e Fechamento do Caixa #{{ caixa.id }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 650px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-lock" style="color: var(--danger);"></i> Fechar Caixa #{{ caixa.id }}</h3>
+      <a href="{% url 'caixa_status' %}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+      </a>
+    </div>
+    <div class="card-body">
+      <!-- Resumo do Caixa -->
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 24px;">
+        <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; letter-spacing: 0.5px;">
+          Valores Registrados pelo Sistema
+        </h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+          <div><strong style="color: var(--text-muted);">Operador:</strong> {{ caixa.operador.first_name|default:caixa.operador.username }}</div>
+          <div><strong style="color: var(--text-muted);">Abertura:</strong> {{ caixa.data_abertura|date:"d/m/Y H:i" }}</div>
+          <div><strong style="color: var(--text-muted);">Fundo Inicial:</strong> R$ {{ caixa.fundo_troco_inicial|floatformat:2 }}</div>
+          <div><strong style="color: var(--text-muted);">Vendas em Dinheiro:</strong> R$ {{ caixa.total_dinheiro|floatformat:2 }}</div>
+        </div>
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; font-weight: 600;">Total Esperado na Gaveta:</span>
+          <span style="font-size: 20px; font-weight: 800; color: var(--primary);" id="valor_sistema_num" data-val="{{ caixa.valor_sistema|stringformat:'.2f' }}">
+            R$ {{ caixa.valor_sistema|floatformat:2 }}
+          </span>
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" for="valor_fisico_conferido">Valor Físico em Dinheiro Contado na Gaveta (R$) *</label>
+          <input type="number" step="0.01" id="valor_fisico_conferido" name="valor_fisico_conferido" value="{{ caixa.valor_sistema|stringformat:'.2f' }}" class="form-control" style="font-size: 22px; font-weight: bold; text-align: center;" required oninput="calcularDiferenca()" autofocus>
+        </div>
+
+        <!-- Indicador de Diferença em Tempo Real -->
+        <div id="box_diferenca" style="padding: 14px; border-radius: var(--radius-sm); margin-bottom: 20px; text-align: center; font-size: 15px; font-weight: 700; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">
+          Diferença de Caixa: R$ 0,00 (Caixa Exato)
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="observacao">Observações do Fechamento (Opcional)</label>
+          <textarea id="observacao" name="observacao" rows="3" class="form-control" placeholder="Justifique se houver quebra ou sobra de caixa..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <a href="{% url 'caixa_status' %}" class="btn btn-secondary" style="flex: 1;">Cancelar</a>
+          <button type="submit" class="btn btn-danger" style="flex: 2;">
+            <i class="fas fa-check-circle"></i> Confirmar Fechamento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function calcularDiferenca() {
+    const valorSistema = parseFloat(document.getElementById('valor_sistema_num').getAttribute('data-val')) || 0;
+    const valorFisico = parseFloat(document.getElementById('valor_fisico_conferido').value) || 0;
+    const dif = valorFisico - valorSistema;
+    const box = document.getElementById('box_diferenca');
+
+    if (Math.abs(dif) < 0.01) {
+      box.style.background = '#ecfdf5';
+      box.style.color = '#065f46';
+      box.style.borderColor = '#a7f3d0';
+      box.innerText = 'Diferença de Caixa: R$ 0,00 (Caixa Exato)';
+    } else if (dif > 0) {
+      box.style.background = '#f0f9ff';
+      box.style.color = '#0369a1';
+      box.style.borderColor = '#bae6fd';
+      box.innerText = 'SOBRA de Caixa: + R$ ' + dif.toFixed(2).replace('.', ',');
+    } else {
+      box.style.background = '#fef2f2';
+      box.style.color = '#b91c1c';
+      box.style.borderColor = '#fecaca';
+      box.innerText = 'QUEBRA (FALTA) de Caixa: - R$ ' + Math.abs(dif).toFixed(2).replace('.', ',');
+    }
+  }
+  calcularDiferenca();
+</script>
+{% endblock %}

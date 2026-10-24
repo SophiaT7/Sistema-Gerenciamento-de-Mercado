@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Registro de Perdas{% endblock %}
+{% block page_title %}Histórico de Perdas &amp; Avarias no Estoque{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <p style="color: var(--text-muted); font-size: 14px;">Auditoria de todas as perdas registradas por vencimento, quebra, avaria ou furto.</p>
+  {% if user.papel != 'OPERADOR' %}
+    <a href="{% url 'perda_registrar' %}" class="btn btn-danger">
+      <i class="fas fa-plus"></i> Registrar Nova Perda
+    </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-trash-alt" style="color: var(--danger);"></i> Perdas Registradas ({{ perdas|length }})</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Data/Hora</th>
+          <th>Produto</th>
+          <th>Qtd Baixada</th>
+          <th>Motivo</th>
+          <th>Lote</th>
+          <th>Responsável</th>
+          <th>Justificativa</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in perdas %}
+          <tr>
+            <td>{{ p.data_hora|date:"d/m/Y H:i" }}</td>
+            <td><strong>{{ p.produto.nome }}</strong> ({{ p.produto.codigo }})</td>
+            <td><strong style="color: var(--danger); font-size: 14px;">- {{ p.quantidade }} {{ p.produto.unidade }}</strong></td>
+            <td>
+              <span class="badge badge-warning">{{ p.get_motivo_display }}</span>
+            </td>
+            <td>{{ p.lote.numero_lote|default:"Lote Geral" }}</td>
+            <td>{{ p.responsavel.first_name|default:p.responsavel.username }}</td>
+            <td style="font-size: 13px; color: var(--text-muted);">{{ p.justificativa|default:"-" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">
+              Nenhuma perda registrada no mercado até o momento.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

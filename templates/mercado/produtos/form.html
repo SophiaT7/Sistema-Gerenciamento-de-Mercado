@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Novo Produto{% endblock %}
+{% block page_title %}Cadastro de Produto{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-box-open" style="color: var(--primary);"></i> Dados do Produto</h3>
+      <a href="{% url 'produto_lista' %}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+      </a>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label" for="codigo">Código de Barras / Código *</label>
+            <input type="text" id="codigo" name="codigo" class="form-control" placeholder="Ex: 7891234567890" required autofocus>
+          </div>
+          <div class="form-group" style="flex: 2;">
+            <label class="form-label" for="nome">Nome do Produto *</label>
+            <input type="text" id="nome" name="nome" class="form-control" placeholder="Ex: Biscoito Recheado Chocolate 140g" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="categoria">Categoria *</label>
+            <select id="categoria" name="categoria" class="form-select" required>
+              {% for cod, rotulo in categorias %}
+                <option value="{{ cod }}">{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="unidade">Unidade de Medida *</label>
+            <select id="unidade" name="unidade" class="form-select" required>
+              {% for cod, rotulo in unidades %}
+                <option value="{{ cod }}">{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="estoque_minimo">Estoque Mínimo (Alerta) *</label>
+            <input type="number" step="0.01" id="estoque_minimo" name="estoque_minimo" value="10" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="preco_custo">Preço de Custo (R$) *</label>
+            <input type="number" step="0.01" id="preco_custo" name="preco_custo" value="0.00" class="form-control" required oninput="calcularPrecoSugerido()">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="margem_lucro">Margem de Lucro Desejada (%) *</label>
+            <input type="number" step="0.1" id="margem_lucro" name="margem_lucro" value="35.0" class="form-control" required oninput="calcularPrecoSugerido()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Preço de Venda Sugerido</label>
+            <div id="preco_sugerido_display" style="font-size: 20px; font-weight: 800; color: var(--success); padding: 8px 0;">
+              R$ 0,00
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 20px;">
+          <a href="{% url 'produto_lista' %}" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Salvar Produto
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function calcularPrecoSugerido() {
+    const custo = parseFloat(document.getElementById('preco_custo').value) || 0;
+    const margem = parseFloat(document.getElementById('margem_lucro').value) || 0;
+    const venda = custo * (1 + (margem / 100));
+    document.getElementById('preco_sugerido_display').innerText = 'R$ ' + venda.toFixed(2).replace('.', ',');
+  }
+  calcularPrecoSugerido();
+</script>
+{% endblock %}

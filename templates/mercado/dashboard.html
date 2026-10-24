@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard do Dono{% endblock %}
+{% block page_title %}Visão Geral do Mercado{% endblock %}
+
+{% block content %}
+<!-- Metrics Grid -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-info">
+      <span>Faturamento Hoje</span>
+      <h3>R$ {{ total_faturado_hoje|floatformat:2 }}</h3>
+    </div>
+    <div class="metric-icon emerald">
+      <i class="fas fa-hand-holding-usd"></i>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-info">
+      <span>Vendas Realizadas Hoje</span>
+      <h3>{{ qtd_vendas_hoje }}</h3>
+    </div>
+    <div class="metric-icon indigo">
+      <i class="fas fa-shopping-cart"></i>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-info">
+      <span>Estoque Crítico</span>
+      <h3>{{ qtd_estoque_baixo }}</h3>
+    </div>
+    <div class="metric-icon amber">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-info">
+      <span>Lotes Vencidos / Vencendo</span>
+      <h3>{{ lotes_vencidos }} / {{ lotes_vencendo }}</h3>
+    </div>
+    <div class="metric-icon rose">
+      <i class="fas fa-calendar-times"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Ações Rápidas -->
+<div style="display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap;">
+  <a href="{% url 'pdv' %}" class="btn btn-primary">
+    <i class="fas fa-cash-register"></i> Abrir PDV de Venda
+  </a>
+  <a href="{% url 'produto_criar' %}" class="btn btn-secondary">
+    <i class="fas fa-plus"></i> Novo Produto
+  </a>
+  <a href="{% url 'entrada_mercadoria' %}" class="btn btn-secondary">
+    <i class="fas fa-truck-loading"></i> Entrada de Nota Fiscal
+  </a>
+  <a href="{% url 'perda_registrar' %}" class="btn btn-secondary">
+    <i class="fas fa-trash-alt"></i> Registrar Perda / Avaria
+  </a>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 24px;">
+  <!-- Últimas Vendas -->
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-receipt" style="color: var(--primary);"></i> Últimas Vendas no PDV</h3>
+      <a href="{% url 'pdv' %}" class="btn btn-sm btn-primary">Ir para PDV</a>
+    </div>
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Data/Hora</th>
+            <th>Operador</th>
+            <th>Pagamento</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for venda in ultimas_vendas %}
+            <tr>
+              <td><strong>#{{ venda.id }}</strong></td>
+              <td>{{ venda.data_venda|date:"d/m/Y H:i" }}</td>
+              <td>{{ venda.operador.first_name|default:venda.operador.username }}</td>
+              <td>
+                <span class="badge badge-info">{{ venda.get_meio_pagamento_display }}</span>
+              </td>
+              <td><strong style="color: var(--success);">R$ {{ venda.total|floatformat:2 }}</strong></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                Nenhuma venda registrada hoje ainda. <a href="{% url 'pdv' %}">Iniciar uma venda agora</a>.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Alertas Críticos do Mercado -->
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-bell" style="color: var(--danger);"></i> Alertas Pendentes</h3>
+      <a href="{% url 'alerta_lista' %}" class="btn btn-sm btn-secondary">Ver Todos</a>
+    </div>
+    <div class="card-body" style="padding: 16px 20px;">
+      {% if alertas_recentes %}
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for alerta in alertas_recentes %}
+            <div style="border-left: 4px solid {% if alerta.tipo == 'VENCIDO' %}var(--danger){% elif alerta.tipo == 'ESTOQUE_BAIXO' %}var(--warning){% else %}var(--info){% endif %}; padding: 10px 14px; background: #f8fafc; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">{{ alerta.get_tipo_display }}</span>
+                <span style="font-size: 11px; color: var(--text-light);">{{ alerta.data_criacao|timesince }} atrás</span>
+              </div>
+              <p style="font-size: 13px; color: var(--text-main); margin-bottom: 8px;">{{ alerta.mensagem }}</p>
+              <div style="text-align: right;">
+                <a href="{% url 'alerta_marcar_visto' alerta.id %}" class="btn btn-sm btn-secondary" style="padding: 2px 8px; font-size: 11px;">
+                  <i class="fas fa-check"></i> Marcar como Lido
+                </a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 30px 0;">
+          <i class="fas fa-check-circle" style="font-size: 32px; color: var(--success); margin-bottom: 8px; display: block;"></i>
+          Tudo certo! Nenhum alerta crítico pendente no mercado.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

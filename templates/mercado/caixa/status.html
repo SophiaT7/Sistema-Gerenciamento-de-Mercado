@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Frente de Caixa{% endblock %}
+{% block page_title %}Controle e Movimentação de Caixa{% endblock %}
+
+{% block content %}
+<!-- Status do Caixa Atual -->
+<div class="card" style="margin-bottom: 28px;">
+  <div class="card-header">
+    <h3><i class="fas fa-cash-register" style="color: var(--primary);"></i> Situação do Meu Caixa</h3>
+    {% if caixa_atual %}
+      <span class="badge badge-success" style="font-size: 13px; padding: 6px 14px;">
+        <i class="fas fa-circle" style="font-size: 8px;"></i> ABERTO
+      </span>
+    {% else %}
+      <span class="badge badge-neutral" style="font-size: 13px; padding: 6px 14px;">
+        <i class="fas fa-lock"></i> FECHADO
+      </span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if caixa_atual %}
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
+        <div style="background: #f8fafc; padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+          <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Caixa</span>
+          <h4 style="font-size: 18px; margin-top: 4px;">#{{ caixa_atual.id }}</h4>
+        </div>
+        <div style="background: #f8fafc; padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+          <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Abertura</span>
+          <h4 style="font-size: 15px; margin-top: 4px;">{{ caixa_atual.data_abertura|date:"d/m/Y H:i" }}</h4>
+        </div>
+        <div style="background: #f8fafc; padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+          <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Fundo de Troco Inicial</span>
+          <h4 style="font-size: 18px; color: var(--text-main); margin-top: 4px;">R$ {{ caixa_atual.fundo_troco_inicial|floatformat:2 }}</h4>
+        </div>
+        <div style="background: #f8fafc; padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+          <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Total Vendas no Caixa</span>
+          <h4 style="font-size: 18px; color: var(--primary); margin-top: 4px;">R$ {{ caixa_atual.total_vendas_periodo|floatformat:2 }}</h4>
+        </div>
+        <div style="background: #ecfdf5; padding: 16px; border-radius: var(--radius-sm); border: 1px solid #a7f3d0;">
+          <span style="font-size: 12px; color: #065f46; font-weight: 600;">Esperado em Dinheiro</span>
+          <h4 style="font-size: 18px; color: #065f46; margin-top: 4px;">R$ {{ caixa_atual.valor_sistema|floatformat:2 }}</h4>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <a href="{% url 'pdv' %}" class="btn btn-primary">
+          <i class="fas fa-shopping-cart"></i> Operar PDV
+        </a>
+        <a href="{% url 'caixa_fechar' caixa_atual.id %}" class="btn btn-danger">
+          <i class="fas fa-lock"></i> Realizar Fechamento do Caixa
+        </a>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 30px 20px;">
+        <i class="fas fa-cash-register" style="font-size: 48px; color: var(--text-light); margin-bottom: 16px;"></i>
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">Seu caixa está atualmente fechado</h4>
+        <p style="color: var(--text-muted); font-size: 14px; max-width: 480px; margin: 0 auto 20px;">
+          Para realizar vendas no Ponto de Venda (PDV), você precisa abrir o caixa informando o fundo de troco inicial.
+        </p>
+        <a href="{% url 'caixa_abrir' %}" class="btn btn-primary" style="padding: 12px 24px; font-size: 15px;">
+          <i class="fas fa-key"></i> Abrir Caixa Agora
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Histórico de Caixas -->
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-history" style="color: var(--primary);"></i> Histórico de Caixas Anteriores</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Caixa</th>
+          <th>Operador</th>
+          <th>Abertura</th>
+          <th>Fechamento</th>
+          <th>Fundo Inicial</th>
+          <th>Total Vendas</th>
+          <th>Esperado</th>
+          <th>Conferido</th>
+          <th>Diferença</th>
+          <th>Situação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in caixas_historico %}
+          <tr>
+            <td><strong>#{{ c.id }}</strong></td>
+            <td>{{ c.operador.first_name|default:c.operador.username }}</td>
+            <td>{{ c.data_abertura|date:"d/m/Y H:i" }}</td>
+            <td>{{ c.data_fechamento|date:"d/m/Y H:i"|default:"-" }}</td>
+            <td>R$ {{ c.fundo_troco_inicial|floatformat:2 }}</td>
+            <td>R$ {{ c.total_vendas_periodo|floatformat:2 }}</td>
+            <td>R$ {{ c.valor_sistema|floatformat:2 }}</td>
+            <td>
+              {% if c.valor_fisico_conferido is not None %}
+                R$ {{ c.valor_fisico_conferido|floatformat:2 }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              {% if not c.aberto and c.valor_fisico_conferido is not None %}
+                {% if c.diferenca == 0 %}
+                  <span style="color: var(--success); font-weight: bold;">R$ 0,00</span>
+                {% elif c.diferenca > 0 %}
+                  <span style="color: var(--info); font-weight: bold;">+ R$ {{ c.diferenca|floatformat:2 }}</span>
+                {% else %}
+                  <span style="color: var(--danger); font-weight: bold;">- R$ {{ c.diferenca|floatformat:2|slice:"1:" }}</span>
+                {% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              {% if c.aberto %}
+                <span class="badge badge-success">Aberto</span>
+              {% else %}
+                <span class="badge badge-neutral">Fechado</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px;">
+              Nenhum histórico de caixa encontrado.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

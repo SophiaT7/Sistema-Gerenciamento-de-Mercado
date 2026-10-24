@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Mercado Gestão{% endblock %} | Sistema de Supermercado</title>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="brand-header">
+      <div class="brand-icon">
+        <i class="fas fa-shopping-basket"></i>
+      </div>
+      <div class="brand-text">
+        <h1>Mercado Central</h1>
+        <span>Gestão &amp; PDV</span>
+      </div>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="menu-section-title">Principal</li>
+      <li>
+        <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+          <i class="fas fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'pdv' %}" class="{% if request.resolver_match.url_name == 'pdv' %}active{% endif %}">
+          <i class="fas fa-cash-register"></i>
+          <span>Ponto de Venda (PDV)</span>
+        </a>
+      </li>
+
+      <li class="menu-section-title">Operações</li>
+      <li>
+        <a href="{% url 'caixa_status' %}" class="{% if 'caixa' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-wallet"></i>
+          <span>Frente de Caixa</span>
+          {% if caixa_aberto_usuario %}
+            <span class="badge badge-success" style="font-size: 10px; padding: 2px 6px;">ABERTO</span>
+          {% else %}
+            <span class="badge badge-neutral" style="font-size: 10px; padding: 2px 6px;">FECHADO</span>
+          {% endif %}
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'produto_lista' %}" class="{% if 'produto' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-box"></i>
+          <span>Produtos &amp; Estoque</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'entrada_lista' %}" class="{% if 'entrada' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-truck-loading"></i>
+          <span>Entradas &amp; Lotes</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'perda_lista' %}" class="{% if 'perda' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-trash-alt"></i>
+          <span>Registro de Perdas</span>
+        </a>
+      </li>
+
+      <li class="menu-section-title">Controle &amp; Auditoria</li>
+      <li>
+        <a href="{% url 'alerta_lista' %}" class="{% if 'alerta' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-bell"></i>
+          <span>Alertas do Mercado</span>
+          {% if total_alertas > 0 %}
+            <span class="menu-badge">{{ total_alertas }}</span>
+          {% endif %}
+        </a>
+      </li>
+      {% if user.is_staff %}
+      <li>
+        <a href="/admin/" target="_blank">
+          <i class="fas fa-sliders-h"></i>
+          <span>Painel Jazzmin Admin</span>
+          <i class="fas fa-external-link-alt" style="font-size: 11px; margin-left: auto;"></i>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+
+    <!-- User Profile Footer -->
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">
+          {{ user.first_name|default:user.username|slice:":1"|upper }}
+        </div>
+        <div class="user-info">
+          <div class="name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="role">{{ user.get_papel_display }}</div>
+        </div>
+      </div>
+      <a href="{% url 'logout' %}" class="btn-logout" title="Sair do Sistema">
+        <i class="fas fa-sign-out-alt"></i>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="app-main">
+    <header class="top-navbar">
+      <div class="navbar-title">
+        <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+      </div>
+
+      <div class="navbar-actions">
+        {% if caixa_aberto_usuario %}
+          <div style="font-size: 13px; color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <i class="fas fa-circle" style="font-size: 8px;"></i>
+            <span>Caixa #{{ caixa_aberto_usuario.id }} Ativo (Fundo: R$ {{ caixa_aberto_usuario.fundo_troco_inicial }})</span>
+          </div>
+        {% else %}
+          <a href="{% url 'caixa_abrir' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-key"></i> Abrir Caixa
+          </a>
+        {% endif %}
+
+        <a href="{% url 'alerta_lista' %}" class="btn btn-sm btn-secondary" style="position: relative;" title="Alertas">
+          <i class="fas fa-bell"></i>
+          {% if total_alertas > 0 %}
+            <span style="position: absolute; top: -5px; right: -5px; background: var(--danger); color: #fff; border-radius: 9999px; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+              {{ total_alertas }}
+            </span>
+          {% endif %}
+        </a>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- Mensagens Flash -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-box alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% else %}success{% endif %}">
+            <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% elif message.tags == 'info' %}fa-info-circle{% else %}fa-check-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

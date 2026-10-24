@@ -1,0 +1,160 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acesso ao Sistema | Mercado Central</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .login-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      border-radius: var(--radius-md);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: #fff;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 16px rgba(79, 70, 229, 0.3);
+    }
+    .login-header h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .login-header p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .demo-accounts {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px dashed var(--border);
+    }
+    .demo-accounts h4 {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn-demo {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: var(--transition);
+    }
+    .btn-demo:hover {
+      background: var(--primary-light);
+      border-color: var(--border-focus);
+      color: var(--primary);
+    }
+    .btn-demo span {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-header">
+      <div class="login-icon">
+        <i class="fas fa-shopping-basket"></i>
+      </div>
+      <h2>Mercado Central</h2>
+      <p>Sistema de Gestão &amp; Ponto de Venda (PDV)</p>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert-box alert-{% if message.tags == 'error' %}error{% else %}info{% endif %}">
+          <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" id="loginForm">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="username">Usuário</label>
+        <div style="position: relative;">
+          <input type="text" id="username" name="username" class="form-control" placeholder="Digite seu usuário" required autofocus>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Senha</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 15px; margin-top: 8px;">
+        <i class="fas fa-sign-in-alt"></i> Entrar no Sistema
+      </button>
+    </form>
+
+    <div class="demo-accounts">
+      <h4>Acesso Rápido para Demonstração</h4>
+      <div class="demo-grid">
+        <button type="button" class="btn-demo" onclick="fillCredentials('dono', 'dono123')">
+          <strong>👤 Dono do Mercado</strong>
+          <span>dono / dono123</span>
+        </button>
+        <button type="button" class="btn-demo" onclick="fillCredentials('operador', 'caixa123')">
+          <strong>🛒 Operador de Caixa</strong>
+          <span>operador / caixa123</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function fillCredentials(user, pass) {
+      document.getElementById('username').value = user;
+      document.getElementById('password').value = pass;
+      document.getElementById('loginForm').submit();
+    }
+  </script>
+</body>
+</html>
