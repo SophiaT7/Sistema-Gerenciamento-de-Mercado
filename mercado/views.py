@@ -20,6 +20,7 @@ from .services import (
 
 def login_view(request):
     """
+    recebe requisição do nav e retorna a tela de login, caso o usuário já esteja logado, redireciona para o dashboard
     <<boundary>> TelaLogin
     """
     if request.user.is_authenticated:
