@@ -1,152 +1,282 @@
 from pathlib import Path
-from reportlab.lib.pagesizes import A4
+
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, PageBreak, KeepTogether
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from playwright.sync_api import sync_playwright
+from reportlab.platypus import (
+    Image,
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
+
 
 ROOT = Path(__file__).resolve().parent
-IMG_DIR = ROOT / 'report_images'
-IMG_DIR.mkdir(exist_ok=True)
-PDF_PATH = ROOT / 'relatorio_sistema_mercado.pdf'
-ERROR_IMAGE = Path(r'C:\Users\Blast\AppData\Roaming\Code\agentSessionData\b0f04d95-f68b-4e26-a249-1f13119fc521\attachments\09124702-4f8b-4b59-b252-a6fede1f7edd\Pasted Image.png')
-
-
-def capture_screenshots():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page(viewport={'width': 1440, 'height': 1200})
-        page.goto('http://127.0.0.1:8000/', timeout=30000)
-        page.screenshot(path=str(IMG_DIR / 'login.png'), full_page=True)
-
-        page.fill('#username', 'dono')
-        page.fill('#password', 'dono123')
-        page.locator("button[type='submit']").click()
-        page.wait_for_url('**/dashboard', timeout=30000)
-        page.screenshot(path=str(IMG_DIR / 'dashboard.png'), full_page=True)
-
-        page.goto('http://127.0.0.1:8000/produtos/', timeout=30000)
-        page.screenshot(path=str(IMG_DIR / 'produtos.png'), full_page=True)
-
-        page.goto('http://127.0.0.1:8000/entradas/', timeout=30000)
-        page.screenshot(path=str(IMG_DIR / 'entradas.png'), full_page=True)
-
-        page.goto('http://127.0.0.1:8000/pdv/', timeout=30000)
-        page.screenshot(path=str(IMG_DIR / 'pdv.png'), full_page=True)
-
-        browser.close()
+IMG_DIR = ROOT / "report_images"
+PDF_PATH = ROOT / "relatorio_sistema_mercado.pdf"
 
 
 def build_pdf():
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'TitleStyle',
-        parent=styles['Title'],
-        fontName='Helvetica-Bold',
-        fontSize=20,
-        leading=24,
-        textColor=colors.HexColor('#1f2937'),
-        spaceAfter=12,
-    )
-    h2_style = ParagraphStyle(
-        'H2Style',
-        parent=styles['Heading2'],
-        fontName='Helvetica-Bold',
-        fontSize=13,
-        leading=16,
-        textColor=colors.HexColor('#0f172a'),
-        spaceBefore=10,
-        spaceAfter=8,
-    )
-    body_style = ParagraphStyle(
-        'BodyStyle',
-        parent=styles['BodyText'],
-        fontName='Helvetica',
-        fontSize=10,
-        leading=14,
-        textColor=colors.HexColor('#1f2937'),
-        spaceAfter=6,
-    )
-    bullet_style = ParagraphStyle(
-        'BulletStyle',
-        parent=body_style,
-        leftIndent=18,
-        bulletIndent=10,
-        bulletFontName='Helvetica-Bold',
-        spaceAfter=4,
-    )
-    note_style = ParagraphStyle(
-        'NoteStyle',
-        parent=body_style,
-        fontSize=9,
-        textColor=colors.HexColor('#374151'),
-        leftIndent=8,
-        spaceAfter=6,
-    )
+    page_width, _ = A4
+    navy = colors.HexColor("#14213d")
+    purple = colors.HexColor("#5145e5")
+    muted = colors.HexColor("#526174")
+    pale = colors.HexColor("#f3f5fb")
+    border = colors.HexColor("#dce2ee")
 
-    story = []
-    story.append(Paragraph('Relatório do Sistema de Gerenciamento de Mercado', title_style))
-    story.append(Paragraph('Projeto Django | Gestão de estoque, caixa, PDV e alertas', body_style))
-    story.append(Spacer(1, 0.25 * cm))
-    story.append(Paragraph('1. O que foi implementado', h2_style))
-    story.append(Paragraph('O sistema foi estruturado em Django com modelagem de domínio para gestão de produtos, lotes, entradas, caixa, PDV, perdas e alertas. A aplicação possui interface web com login, painel de controle, autenticação por perfis e regras de negócio centralizadas em serviços.', body_style))
-    story.append(Paragraph('Principais funcionalidades entregues:', bullet_style))
-    story.append(Paragraph('- Autenticação por usuário e papéis: dono, gerente, operador e estoquista.', bullet_style))
-    story.append(Paragraph('- Cadastro e atualização de produtos com código, categoria, preço de custo, margem, preço de venda e controle de estoque mínimo.', bullet_style))
-    story.append(Paragraph('- Registro de entradas de mercadoria com números de nota e controle por lotes e validade.', bullet_style))
-    story.append(Paragraph('- Fluxo de caixa com abertura, fechamento e diferencas de valor.', bullet_style))
-    story.append(Paragraph('- PDV com busca por produto, cálculo de pagamentos e baixa inteligente por lote (FEFO).', bullet_style))
-    story.append(Paragraph('- Registro de perdas e alertas automáticos de estoque baixo e vencimento.', bullet_style))
+    sample = getSampleStyleSheet()
+    styles = {
+        "title": ParagraphStyle(
+            "ReportTitle",
+            parent=sample["Title"],
+            fontName="Helvetica-Bold",
+            fontSize=20,
+            leading=23,
+            textColor=navy,
+            alignment=TA_CENTER,
+            spaceAfter=4,
+        ),
+        "subtitle": ParagraphStyle(
+            "Subtitle",
+            parent=sample["BodyText"],
+            fontName="Helvetica",
+            fontSize=9,
+            leading=12,
+            textColor=muted,
+            alignment=TA_CENTER,
+            spaceAfter=10,
+        ),
+        "heading": ParagraphStyle(
+            "SectionHeading",
+            parent=sample["Heading2"],
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            leading=15,
+            textColor=navy,
+            spaceBefore=7,
+            spaceAfter=4,
+        ),
+        "body": ParagraphStyle(
+            "ReportBody",
+            parent=sample["BodyText"],
+            fontName="Helvetica",
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor("#263449"),
+            spaceAfter=4,
+        ),
+        "small": ParagraphStyle(
+            "SmallNote",
+            parent=sample["BodyText"],
+            fontName="Helvetica",
+            fontSize=7.5,
+            leading=9,
+            textColor=muted,
+            spaceAfter=2,
+        ),
+        "caption": ParagraphStyle(
+            "ImageCaption",
+            parent=sample["BodyText"],
+            fontName="Helvetica-Bold",
+            fontSize=8,
+            leading=10,
+            alignment=TA_CENTER,
+            textColor=navy,
+        ),
+        "bullet": ParagraphStyle(
+            "ReportBullet",
+            parent=sample["BodyText"],
+            fontName="Helvetica",
+            fontSize=8.5,
+            leading=11,
+            leftIndent=12,
+            firstLineIndent=-8,
+            textColor=colors.HexColor("#263449"),
+            spaceAfter=2,
+        ),
+    }
 
-    story.append(Spacer(1, 0.2 * cm))
-    story.append(Paragraph('2. Prints das telas principais', h2_style))
-    images = [
-        ('login.png', 'Tela de login'),
-        ('dashboard.png', 'Dashboard principal'),
-        ('produtos.png', 'Cadastro / listagem de produtos'),
+    story = [
+        Paragraph("Relatório do Sistema de Gerenciamento de Mercado", styles["title"]),
+        Paragraph(
+            "Aplicação web em Django | Gestão de estoque, caixa e ponto de venda",
+            styles["subtitle"],
+        ),
+        Paragraph("1. Objetivo e implementação", styles["heading"]),
+        Paragraph(
+            "O projeto foi pensado para pequenos comércios que precisam controlar vendas, "
+            "estoque e validade sem depender de um sistema comercial caro. A aplicação "
+            "reúne essas rotinas em uma interface web e organiza o código no padrão "
+            "BCE (Boundary–Control–Entity).",
+            styles["body"],
+        ),
+        Paragraph(
+            "<b>Funcionalidades implementadas</b>: acesso por perfis (dono, gerente, "
+            "estoquista e operador); cadastro e precificação de produtos; entradas "
+            "registradas com fornecedor, número de nota e lotes; abertura e fechamento "
+            "de caixa com conferência; PDV com busca e pagamentos; registro de perdas; "
+            "e alertas de estoque baixo e vencimento.",
+            styles["body"],
+        ),
+        Paragraph(
+            "Na venda, o estoque é baixado por lote com prioridade para o vencimento "
+            "mais próximo (FEFO). As movimentações e itens de venda permitem acompanhar "
+            "o histórico operacional.",
+            styles["body"],
+        ),
+        Paragraph("2. Telas da aplicação", styles["heading"]),
     ]
 
-    for filename, caption in images:
-        path = IMG_DIR / filename
-        if path.exists():
-            img = Image(str(path), width=15 * cm, height=9 * cm)
-            story.append(img)
-            story.append(Paragraph(caption, note_style))
-            story.append(Spacer(1, 0.18 * cm))
+    screenshot_specs = [
+        ("dashboard.png", "Painel: vendas, estoque crítico e alertas"),
+        ("produtos.png", "Produtos: preços, quantidades e situação do estoque"),
+    ]
+    screenshot_cells = []
+    image_width = 8.45 * cm
+    for filename, caption in screenshot_specs:
+        image_path = IMG_DIR / filename
+        if image_path.exists():
+            image = Image(str(image_path), width=image_width, height=7.04 * cm)
+            screenshot_cells.append(
+                [image, Spacer(1, 3), Paragraph(caption, styles["caption"])]
+            )
 
-    story.append(PageBreak())
-    story.append(Paragraph('3. O que ficou de fora', h2_style))
-    story.append(Paragraph('A aplicação já entrega a base do sistema de mercado, porém ainda há lacunas em relação a um ambiente mais completo de produção. Entre os itens não implementados nesta etapa, destacam-se:', body_style))
-    story.append(Paragraph('- Integração com uma API pública de notas fiscais legítimas, que exigiria autorização e mapeamento de regras do emissor.', bullet_style))
-    story.append(Paragraph('- Emissão de documentos fiscais eletrônicos em conformidade com a legislação local.', bullet_style))
-    story.append(Paragraph('- Módulo de relatórios financeiros mais robustos e exportação para CSV/PDF em diferentes filtros.', bullet_style))
-    story.append(Paragraph('- Fluxo de gestão de múltiplas filiais e usuários com permissões segmentadas em maior profundidade.', bullet_style))
+    if screenshot_cells:
+        screenshots = Table(
+            [screenshot_cells],
+            colWidths=[8.75 * cm] * len(screenshot_cells),
+            hAlign="CENTER",
+        )
+        screenshots.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), pale),
+                    ("BOX", (0, 0), (-1, -1), 0.6, border),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.5, border),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+        story.append(screenshots)
 
-    story.append(Paragraph('4. Mudanças em relação à modelagem e dificuldades encontradas', h2_style))
-    story.append(Paragraph('A modelagem foi adaptada para um escopo prático de mercado e PDV, com foco em persistência e regras de negócio. Em vez de uma estrutura extremamente genérica, priorizou-se uma solução direta com entidades centrais: Usuário, Produto, Lote, EntradaMercadoria, Caixa, Venda, ItemVenda, Perda, MovimentacaoEstoque e Alerta.', body_style))
-    story.append(Paragraph('Dificuldades principais:', bullet_style))
-    story.append(Paragraph('- Achar um servidor estável e coerente para o projeto e configurar corretamente os caminhos dos templates e arquivos estáticos.', bullet_style))
-    story.append(Paragraph('- Erros de renderização em páginas que retornavam problemas ao invés de conteúdo visual, apontando para problemas em imports, CSS e paths.', bullet_style))
-    story.append(Paragraph('- Problemas com a configuração de servidor render, especialmente na gestão de sessões, CSRF e rotas quando a aplicação não carregava de forma consistente.', bullet_style))
-    story.append(Paragraph('A imagem abaixo ilustra um erro do tipo CSRF/Render encontrado durante a validação, que reforça a necessidade de revisar o ambiente de execução e a configuração de templates e endpoints.', note_style))
+    story.extend(
+        [
+            Spacer(1, 5),
+            Paragraph(
+                "Qualidades: interface visual consistente, perfis de acesso, regras de "
+                "negócio separadas das telas e controle por lotes. O painel dá visibilidade "
+                "rápida de vendas e situações que precisam de atenção.",
+                styles["small"],
+            ),
+            PageBreak(),
+            Paragraph("3. Modelagem e escopo", styles["heading"]),
+            Paragraph(
+                "A modelagem BCE foi concretizada em entidades Django (por exemplo, "
+                "Produto, Lote, EntradaMercadoria, Caixa, Venda, ItemVenda, Perda, "
+                "MovimentacaoEstoque e Alerta), regras nos controladores de "
+                "<i>services.py</i> e interação nas views e templates. O detalhamento "
+                "de lotes, itens de venda, movimentações e alertas dá suporte à "
+                "rastreabilidade do estoque e da operação.",
+                styles["body"],
+            ),
+            Paragraph(
+                "<b>Ficou de fora:</b> integração com uma API autorizada para consultar "
+                "ou emitir notas fiscais eletrônicas legítimas. O sistema registra "
+                "informações de entrada e nota fornecidas pelo usuário, mas isso não "
+                "equivale a validar ou emitir documento fiscal. Também não foram "
+                "implementados gestão de múltiplas filiais nem relatórios avançados "
+                "com exportação.",
+                styles["body"],
+            ),
+            Paragraph("4. Hospedagem e dificuldades", styles["heading"]),
+            Paragraph(
+                "O guia complementar da equipe recomenda o Render pela integração com "
+                "GitHub e publicação simplificada. Ele descreve a coleta de arquivos "
+                "estáticos com <i>collectstatic</i>, migrações e inicialização via "
+                "<i>gunicorn config.wsgi:application</i>; o projeto inclui Gunicorn e "
+                "WhiteNoise nas dependências/configuração. PostgreSQL é citado como "
+                "alternativa para persistência em produção, mas a configuração atual "
+                "do projeto usa SQLite.",
+                styles["body"],
+            ),
+            Paragraph(
+                "A principal dificuldade foi escolher e configurar um servidor, "
+                "incluindo caminhos de páginas e arquivos CSS/estáticos. Houve páginas "
+                "que apresentavam erro em vez do conteúdo esperado; a equipe suspeitou "
+                "de imports ou paths. A captura abaixo documenta também um erro 403 "
+                "do Render por falha na verificação CSRF (token POST incorreto). "
+                "Esse erro confirma um problema de implantação/formulário, mas não "
+                "prova que CSS ou paths fossem a causa dos outros erros.",
+                styles["body"],
+            ),
+        ]
+    )
 
-    if ERROR_IMAGE.exists():
-        try:
-            err_img = Image(str(ERROR_IMAGE), width=15 * cm, height=9 * cm)
-            story.append(err_img)
-        except Exception:
-            pass
+    error_image_path = IMG_DIR / "render_csrf_403.png"
+    if error_image_path.exists():
+        error_image = Image(str(error_image_path), width=17.5 * cm, height=9.85 * cm)
+        story.append(error_image)
+        story.append(
+            Paragraph(
+                "Evidência do teste de hospedagem: resposta 403 — falha CSRF no POST.",
+                styles["small"],
+            )
+        )
 
-    story.append(Paragraph('5. Qualidades do que foi implementado', h2_style))
-    story.append(Paragraph('Mesmo com as dificuldades de configuração, a aplicação apresenta pontos fortes relevantes: organização por camadas (BCE), regras de negócio centralizadas em serviços, uso de SQLite em desenvolvimento, autenticação e gestão por perfis, controle de estoque por lote e baixa FEFO, além de dashboard com indicadores úteis para operação do mercado.', body_style))
-    story.append(Paragraph('Em resumo, o projeto já funciona como base sólida para operação de um pequeno ou médio mercado, com boa base para evoluir para integração de fornecedores, emissão fiscal e uso em ambiente de produção mais robusto.', body_style))
+    story.extend(
+        [
+            Paragraph("5. Síntese", styles["heading"]),
+            Paragraph(
+                "A aplicação entrega uma base funcional para gestão de um pequeno "
+                "mercado e deixa espaço para evolução. Como próximos passos, recomenda-se "
+                "estabilizar o deploy e a configuração CSRF/arquivos estáticos, adotar "
+                "banco persistente em produção e avaliar a integração fiscal somente "
+                "após obter as autorizações necessárias.",
+                styles["body"],
+            ),
+            Paragraph(
+                "Fonte complementar: <i>Guia de Hospedagem para Sistema de "
+                "Gerenciamento de Estoque</i>, material da equipe enviado para "
+                "enriquecer este relatório. As recomendações de hospedagem são "
+                "apresentadas como plano técnico, não como funcionalidades fiscais "
+                "ou configuração de produção já concluídas.",
+                styles["small"],
+            ),
+        ]
+    )
 
-    doc = SimpleDocTemplate(str(PDF_PATH), pagesize=A4, leftMargin=1.5 * cm, rightMargin=1.5 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm)
-    doc.build(story)
+    def draw_page(canvas, doc):
+        canvas.saveState()
+        canvas.setStrokeColor(border)
+        canvas.line(1.5 * cm, 1.0 * cm, page_width - 1.5 * cm, 1.0 * cm)
+        canvas.setFont("Helvetica", 7.5)
+        canvas.setFillColor(muted)
+        canvas.drawString(1.5 * cm, 0.65 * cm, "Sistema de Gerenciamento de Mercado")
+        canvas.drawRightString(page_width - 1.5 * cm, 0.65 * cm, f"Página {doc.page}")
+        canvas.restoreState()
+
+    document = SimpleDocTemplate(
+        str(PDF_PATH),
+        pagesize=A4,
+        leftMargin=1.5 * cm,
+        rightMargin=1.5 * cm,
+        topMargin=1.15 * cm,
+        bottomMargin=1.3 * cm,
+        title="Relatório do Sistema de Gerenciamento de Mercado",
+        author="Equipe do projeto",
+    )
+    document.build(story, onFirstPage=draw_page, onLaterPages=draw_page)
+    print(f"PDF gerado: {PDF_PATH}")
 
 
-if __name__ == '__main__':
-    capture_screenshots()
+if __name__ == "__main__":
     build_pdf()
-    print(f'PDF gerado em: {PDF_PATH}')
