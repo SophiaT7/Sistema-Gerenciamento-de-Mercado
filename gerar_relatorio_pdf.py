@@ -199,13 +199,14 @@ def build_pdf():
             ),
             Paragraph("4. Hospedagem e dificuldades", styles["heading"]),
             Paragraph(
-                "O guia complementar da equipe recomenda o Render pela integração com "
-                "GitHub e publicação simplificada. Ele descreve a coleta de arquivos "
-                "estáticos com <i>collectstatic</i>, migrações e inicialização via "
-                "<i>gunicorn config.wsgi:application</i>; o projeto inclui Gunicorn e "
-                "WhiteNoise nas dependências/configuração. PostgreSQL é citado como "
-                "alternativa para persistência em produção, mas a configuração atual "
-                "do projeto usa SQLite.",
+                "A hospedagem atual do projeto é o Render; o endereço de acesso é "
+                "<link href='https://sistema-gerenciamento-de-mercado.onrender.com' "
+                "color='#5145e5'>sistema-gerenciamento-de-mercado.onrender.com</link>. "
+                "O endereço do PythonAnywhere não é mais utilizado. A publicação no "
+                "Render usa Gunicorn como servidor da aplicação e WhiteNoise para "
+                "arquivos estáticos; o guia também prevê collectstatic e migrações. "
+                "O projeto está configurado com SQLite, por isso uma implantação de "
+                "produção precisa considerar persistência dos dados.",
                 styles["body"],
             ),
             Paragraph(
@@ -215,7 +216,10 @@ def build_pdf():
                 "de imports ou paths. A captura abaixo documenta também um erro 403 "
                 "do Render por falha na verificação CSRF (token POST incorreto). "
                 "Esse erro confirma um problema de implantação/formulário, mas não "
-                "prova que CSS ou paths fossem a causa dos outros erros.",
+                "prova que CSS ou paths fossem a causa dos outros erros. Na verificação "
+                "mais recente, o endereço do Render também não respondeu normalmente "
+                "(retorno 503/timeout); a disponibilidade deve ser confirmada nos logs "
+                "e no painel do serviço.",
                 styles["body"],
             ),
         ]
@@ -238,17 +242,16 @@ def build_pdf():
             Paragraph(
                 "A aplicação entrega uma base funcional para gestão de um pequeno "
                 "mercado e deixa espaço para evolução. Como próximos passos, recomenda-se "
-                "estabilizar o deploy e a configuração CSRF/arquivos estáticos, adotar "
-                "banco persistente em produção e avaliar a integração fiscal somente "
-                "após obter as autorizações necessárias.",
+                "estabilizar o deploy no Render e a configuração CSRF/arquivos estáticos, "
+                "adotar banco persistente em produção e avaliar a integração fiscal "
+                "somente após obter as autorizações necessárias.",
                 styles["body"],
             ),
             Paragraph(
                 "Fonte complementar: <i>Guia de Hospedagem para Sistema de "
                 "Gerenciamento de Estoque</i>, material da equipe enviado para "
-                "enriquecer este relatório. As recomendações de hospedagem são "
-                "apresentadas como plano técnico, não como funcionalidades fiscais "
-                "ou configuração de produção já concluídas.",
+                "enriquecer este relatório. A hospedagem descrita neste relatório "
+                "refere-se ao Render.",
                 styles["small"],
             ),
         ]
